@@ -1,6 +1,17 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// The backend development server uses port 3001. When the app is opened
+// through a LAN address, use that same address so a phone can scan QR codes.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
+  `${window.location.protocol}//${window.location.hostname}:3001/api`;
+
+export const getPublicQRUrl = (shortCode: string) => {
+  const configuredBase = import.meta.env.VITE_QR_BASE_URL?.replace(/\/$/, '');
+  if (configuredBase) return `${configuredBase}/r/${shortCode}`;
+
+  const apiUrl = new URL(API_BASE_URL);
+  return `${apiUrl.protocol}//${apiUrl.host}/r/${shortCode}`;
+};
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

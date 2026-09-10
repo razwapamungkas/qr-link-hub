@@ -63,6 +63,7 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
     phone: "6281234567890",
     message: "Hello! I scanned your QR code and would like to get in touch.",
   });
+  const [text, setText] = useState("");
 
   // Style State
   const [styleConfig, setStyleConfig] = useState<QRStyleConfig>({
@@ -81,6 +82,9 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
 
   const [saving, setSaving] = useState(false);
 
+  const escapeWifiValue = (value: string) =>
+    value.replace(/([\\\\;,:"])/g, "\\\\$1");
+
   // Compute normalized target URL for redirect
   const getComputedTargetUrl = () => {
     switch (qrType) {
@@ -98,7 +102,9 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
         return `https://wa.me/${cleanPhone}${encodedMsg ? `?text=${encodedMsg}` : ""}`;
       }
       case "wifi": {
-        return `WIFI:S:${wifi.ssid};T:${wifi.encryption};P:${wifi.password || ""};;`;
+        const ssid = escapeWifiValue(wifi.ssid.trim());
+        const password = escapeWifiValue(wifi.password || "");
+        return `WIFI:T:${wifi.encryption};S:${ssid};${wifi.encryption !== "nopass" ? `P:${password};` : ""};`;
       }
       case "vcard": {
         let web = (vCard.website || "").trim();
@@ -114,6 +120,8 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
         }
         return link || "https://qrfy.com";
       }
+      case "text":
+        return text.trim() || " ";
       default:
         return "https://qrfy.com";
     }
@@ -131,6 +139,8 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
         return wifi;
       case "whatsapp":
         return whatsapp;
+      case "text":
+        return { text: text.trim() };
       default:
         return {};
     }
@@ -164,8 +174,6 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
       setSaving(false);
     }
   };
-
-  const previewUrl = `http://${window.location.hostname}:5000/r/preview`;
 
   return (
     <div
@@ -246,6 +254,12 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
                   label: "WhatsApp",
                   icon: MessageSquare,
                   desc: "Tautan chat langsung",
+                },
+                {
+                  type: "text",
+                  label: "Teks",
+                  icon: MessageSquare,
+                  desc: "Pesan yang dapat dipindai",
                 },
               ].map((item) => {
                 const IconComponent = item.icon;
@@ -360,6 +374,34 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
                   />
                 </div>
                 <div className="form-group">
+                  <label className="form-label">Website</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="https://websiteanda.com"
+                    value={vCard.website || ""}
+                    onChange={(e) => setVCard({ ...vCard, website: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Alamat</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={vCard.address || ""}
+                    onChange={(e) => setVCard({ ...vCard, address: e.target.value })}
+                  />
+                </div>
+                <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                  <label className="form-label">Bio Singkat</label>
+                  <textarea
+                    className="form-input"
+                    rows={3}
+                    value={vCard.bio || ""}
+                    onChange={(e) => setVCard({ ...vCard, bio: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
                   <label className="form-label">Nama Belakang</label>
                   <input
                     type="text"
@@ -448,6 +490,25 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
                     }
                   />
                 </div>
+                <div className="form-group">
+                  <label className="form-label">Foto Profil (URL, opsional)</label>
+                  <input type="url" className="form-input" placeholder="https://..." value={bioLink.avatarUrl || ""} onChange={(e) => setBioLink({ ...bioLink, avatarUrl: e.target.value })} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  <label className="form-label">Tautan</label>
+                  {bioLink.links.map((link, index) => (
+                    <div key={link.id} style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr auto", gap: "0.5rem" }}>
+                      <input className="form-input" placeholder="Judul" value={link.title} onChange={(e) => {
+                        const links = [...bioLink.links]; links[index] = { ...link, title: e.target.value }; setBioLink({ ...bioLink, links });
+                      }} />
+                      <input className="form-input" placeholder="https://..." value={link.url} onChange={(e) => {
+                        const links = [...bioLink.links]; links[index] = { ...link, url: e.target.value }; setBioLink({ ...bioLink, links });
+                      }} />
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setBioLink({ ...bioLink, links: bioLink.links.filter((_, itemIndex) => itemIndex !== index) })}>Hapus</button>
+                    </div>
+                  ))}
+                  <button type="button" className="btn btn-secondary btn-sm" style={{ alignSelf: "start" }} onClick={() => setBioLink({ ...bioLink, links: [...bioLink.links, { id: crypto.randomUUID(), title: "", url: "" }] })}>+ Tambah tautan</button>
+                </div>
               </div>
             )}
 
@@ -479,6 +540,14 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
                       setWifi({ ...wifi, password: e.target.value })
                     }
                   />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Keamanan</label>
+                  <select className="form-input" value={wifi.encryption} onChange={(e) => setWifi({ ...wifi, encryption: e.target.value as WiFiData["encryption"] })}>
+                    <option value="WPA">WPA/WPA2</option>
+                    <option value="WEP">WEP</option>
+                    <option value="nopass">Tanpa kata sandi</option>
+                  </select>
                 </div>
               </div>
             )}
@@ -517,6 +586,13 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
                     }
                   />
                 </div>
+              </div>
+            )}
+
+            {qrType === "text" && (
+              <div className="form-group">
+                <label className="form-label">Teks yang ditampilkan saat dipindai</label>
+                <textarea className="form-input" rows={5} placeholder="Tulis pesan di sini..." value={text} onChange={(e) => setText(e.target.value)} />
               </div>
             )}
           </div>
@@ -631,12 +707,27 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
             </h3>
 
             <div style={{ marginBottom: "1.5rem" }}>
-              <QRCodeCanvas
-                value={qrType === "url" ? getComputedTargetUrl() : previewUrl}
-                styleConfig={styleConfig}
-                size={220}
-                showDownload={true}
-              />
+              {["url", "wifi", "whatsapp", "text"].includes(qrType) ? (
+                <QRCodeCanvas
+                  value={getComputedTargetUrl()}
+                  styleConfig={styleConfig}
+                  size={220}
+                  showDownload={true}
+                />
+              ) : (
+                <div
+                  style={{
+                    padding: "2rem 1rem",
+                    border: "1px dashed #a5b4fc",
+                    borderRadius: "16px",
+                    color: "#64748b",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  QR aktif dibuat saat disimpan. Setelah itu, buka Dashboard
+                  untuk memindai atau mengunduh QR kartu nama yang valid.
+                </div>
+              )}
             </div>
 
             <button

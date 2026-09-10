@@ -123,6 +123,11 @@ export async function getPublicQRInfo(req: Request, res: Response): Promise<void
       return;
     }
 
+    if (!qr.is_active) {
+      res.status(410).json({ error: 'QR Code is inactive' });
+      return;
+    }
+
     res.json({
       qrcode: {
         id: qr.id,

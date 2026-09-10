@@ -7,7 +7,7 @@ let dbInstance: Database<sqlite3.Database, sqlite3.Statement> | null = null;
 export async function getDb(): Promise<Database<sqlite3.Database, sqlite3.Statement>> {
   if (dbInstance) return dbInstance;
 
-  const dbPath = path.join(process.cwd(), 'qrfy_hub.sqlite');
+  const dbPath = process.env.QR_DATABASE_PATH || path.join(process.cwd(), 'qrfy_hub.sqlite');
 
   dbInstance = await open({
     filename: dbPath,

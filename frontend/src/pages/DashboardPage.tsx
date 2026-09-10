@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { qrService } from "../services/api";
+import { getPublicQRUrl, qrService } from "../services/api";
 import type { QRCodeData, ScanAnalytics, QRStyleConfig, User } from "../types";
 import { QRCodeCanvas } from "../components/QRCodeCanvas";
 import {
@@ -276,8 +276,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {filteredQRCodes.map((qr) => {
-            const hostName = window.location.hostname || "localhost";
-            const shortUrl = `http://${hostName}:5000/r/${qr.short_code}`;
+            const shortUrl = getPublicQRUrl(qr.short_code);
+            const qrValue = qr.type === "wifi" || qr.type === "text"
+              ? qr.target_url
+              : shortUrl;
             return (
               <div
                 key={qr.id}
@@ -292,7 +294,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 {/* QR Canvas Preview Thumbnail */}
                 <div style={{ display: "flex", justifyContent: "center" }}>
                   <QRCodeCanvas
-                    value={shortUrl}
+                    value={qrValue}
                     styleConfig={
                       qr.style_config && Object.keys(qr.style_config).length > 0
                         ? qr.style_config
