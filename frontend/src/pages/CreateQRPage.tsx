@@ -9,7 +9,7 @@ import type {
   User,
 } from "../types";
 import { QRCodeCanvas } from "../components/QRCodeCanvas";
-import { qrService } from "../services/api";
+import { getPublicQRUrl, qrService } from "../services/api";
 import {
   Globe,
   UserCheck,
@@ -810,183 +810,31 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
             </h3>
 
             <div style={{ marginBottom: "1.5rem" }}>
-              {["url", "wifi", "whatsapp"].includes(qrType) ? (
-                <QRCodeCanvas
-                  value={getComputedTargetUrl()}
-                  styleConfig={styleConfig}
-                  size={220}
-                  showDownload={true}
-                />
-              ) : qrType === "vcard" ? (
+              <QRCodeCanvas
+                value={
+                  ["url", "wifi", "whatsapp"].includes(qrType)
+                    ? getComputedTargetUrl()
+                    : getPublicQRUrl("preview")
+                }
+                styleConfig={styleConfig}
+                size={220}
+                showDownload={["url", "wifi", "whatsapp"].includes(qrType)}
+              />
+              {["vcard", "biolink"].includes(qrType) && (
                 <div
                   style={{
-                    padding: "1.5rem 1rem",
-                    border: "1px dashed #a5b4fc",
-                    borderRadius: "16px",
-                    color: "#64748b",
-                    lineHeight: 1.6,
+                    fontSize: "0.8rem",
+                    color: "#94a3b8",
+                    marginTop: "0.6rem",
+                    lineHeight: 1.5,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: "0.78rem",
-                      color: "#a5b4fc",
-                      fontWeight: 700,
-                      marginBottom: "1rem",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    Pratinjau Halaman Publik
-                  </div>
-                  <div
-                    style={{
-                      width: "70px",
-                      height: "70px",
-                      borderRadius: "50%",
-                      margin: "0 auto 0.75rem",
-                      background: "linear-gradient(135deg, #6366f1, #06b6d4)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontWeight: 800,
-                      fontSize: "1.2rem",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {vCard.avatarUrl ? (
-                      <img
-                        src={vCard.avatarUrl}
-                        alt="avatar"
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      `${(vCard.firstName || "A")[0]}${
-                        (vCard.lastName || "M")[0] || ""
-                      }`.toUpperCase()
-                    )}
-                  </div>
-                  <div
-                    style={{
-                      color: "#e2e8f0",
-                      fontWeight: 800,
-                      fontSize: "1.05rem",
-                    }}
-                  >
-                    {`${vCard.firstName} ${vCard.lastName}`.trim() ||
-                      "Nama Kontak"}
-                  </div>
-                  <div
-                    style={{
-                      color: "#818cf8",
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
-                      marginTop: "0.15rem",
-                    }}
-                  >
-                    {vCard.jobTitle}
-                  </div>
-                  <div style={{ color: "#64748b", fontSize: "0.8rem" }}>
-                    {vCard.company}
-                  </div>
-                </div>
-              ) : (
-                <div
-                  style={{
-                    padding: "1.5rem 1rem",
-                    border: "1px dashed #a5b4fc",
-                    borderRadius: "16px",
-                    color: "#64748b",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "0.78rem",
-                      color: "#a5b4fc",
-                      fontWeight: 700,
-                      marginBottom: "1rem",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    Pratinjau Halaman Publik
-                  </div>
-                  <div
-                    style={{
-                      width: "70px",
-                      height: "70px",
-                      borderRadius: "50%",
-                      margin: "0 auto 0.75rem",
-                      background: "linear-gradient(135deg, #6366f1, #06b6d4)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontWeight: 800,
-                      fontSize: "1.2rem",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {bioLink.avatarUrl ? (
-                      <img
-                        src={bioLink.avatarUrl}
-                        alt="avatar"
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      (bioLink.name || "L")[0].toUpperCase()
-                    )}
-                  </div>
-                  <div style={{ color: "#e2e8f0", fontWeight: 800 }}>
-                    {bioLink.name || "Nama Profil"}
-                  </div>
-                  <div style={{ color: "#94a3b8", fontSize: "0.85rem" }}>
-                    {bioLink.bio}
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "0.4rem",
-                      marginTop: "0.9rem",
-                    }}
-                  >
-                    {(bioLink.links || []).slice(0, 3).map((link, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          background: "rgba(99, 102, 241, 0.25)",
-                          color: "#e2e5f0",
-                          borderRadius: "10px",
-                          padding: "0.45rem 0.85rem",
-                          fontSize: "0.8rem",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {link.title || "Tanpa judul"}
-                      </div>
-                    ))}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "0.72rem",
-                      color: "#64748b",
-                      marginTop: "1rem",
-                    }}
-                  >
-                    QR aktif dibuat saat disimpan. Buka Dashboard untuk
-                    mengunduh QR & mengubah konten kapan saja.
-                  </div>
+                  QR pratinjau memakai kode <b>preview</b> (sementara). Kode unik
+                  &amp; URL final dibuat otomatis saat disimpan, jadi gambar QR
+                  final sedikit berbeda namun tetap berfungsi.
                 </div>
               )}
+
             </div>
 
             <button
