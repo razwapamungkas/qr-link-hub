@@ -1,4 +1,4 @@
-export type QRCodeType = 'url' | 'vcard' | 'biolink' | 'wifi' | 'whatsapp' | 'text';
+export type QRCodeType = 'url' | 'vcard' | 'biolink' | 'wifi' | 'whatsapp';
 
 export interface QRStyleConfig {
   fgColor: string;

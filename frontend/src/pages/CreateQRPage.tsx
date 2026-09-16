@@ -44,6 +44,7 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
     email: "alex.m@example.com",
     website: "https://nexus.example.com",
     address: "San Francisco, CA",
+    avatarUrl: "",
     bio: "Passionate about building next-gen web products.",
   });
   const [bioLink, setBioLink] = useState<BioLinkData>({
@@ -53,6 +54,7 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
       { id: "1", title: "Portfolio Website", url: "https://sarah.example.com" },
       { id: "2", title: "YouTube Channel", url: "https://youtube.com" },
     ],
+    socials: [],
   });
   const [wifi, setWifi] = useState<WiFiData>({
     ssid: "Home_5G_Network",
@@ -63,7 +65,6 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
     phone: "6281234567890",
     message: "Hello! I scanned your QR code and would like to get in touch.",
   });
-  const [text, setText] = useState("");
 
   // Style State
   const [styleConfig, setStyleConfig] = useState<QRStyleConfig>({
@@ -120,8 +121,6 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
         }
         return link || "https://qrfy.com";
       }
-      case "text":
-        return text.trim() || " ";
       default:
         return "https://qrfy.com";
     }
@@ -139,8 +138,6 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
         return wifi;
       case "whatsapp":
         return whatsapp;
-      case "text":
-        return { text: text.trim() };
       default:
         return {};
     }
@@ -255,12 +252,6 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
                   icon: MessageSquare,
                   desc: "Tautan chat langsung",
                 },
-                {
-                  type: "text",
-                  label: "Teks",
-                  icon: MessageSquare,
-                  desc: "Pesan yang dapat dipindai",
-                },
               ].map((item) => {
                 const IconComponent = item.icon;
                 const isSelected = qrType === item.type;
@@ -362,11 +353,26 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
                   gap: "1rem",
                 }}
               >
+                <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                  <label className="form-label">
+                    Foto Profil (URL, opsional)
+                  </label>
+                  <input
+                    type="url"
+                    className="form-input"
+                    placeholder="https://... (mis. Gravatar, Cloudinary, atau URL avatar)"
+                    value={vCard.avatarUrl || ""}
+                    onChange={(e) =>
+                      setVCard({ ...vCard, avatarUrl: e.target.value })
+                    }
+                  />
+                </div>
                 <div className="form-group">
                   <label className="form-label">Nama Depan</label>
                   <input
                     type="text"
                     className="form-input"
+                    placeholder="Mis. Alex"
                     value={vCard.firstName}
                     onChange={(e) =>
                       setVCard({ ...vCard, firstName: e.target.value })
@@ -374,38 +380,11 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Website</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="https://websiteanda.com"
-                    value={vCard.website || ""}
-                    onChange={(e) => setVCard({ ...vCard, website: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Alamat</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={vCard.address || ""}
-                    onChange={(e) => setVCard({ ...vCard, address: e.target.value })}
-                  />
-                </div>
-                <div className="form-group" style={{ gridColumn: "1 / -1" }}>
-                  <label className="form-label">Bio Singkat</label>
-                  <textarea
-                    className="form-input"
-                    rows={3}
-                    value={vCard.bio || ""}
-                    onChange={(e) => setVCard({ ...vCard, bio: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
                   <label className="form-label">Nama Belakang</label>
                   <input
                     type="text"
                     className="form-input"
+                    placeholder="Mis. Morgan"
                     value={vCard.lastName}
                     onChange={(e) =>
                       setVCard({ ...vCard, lastName: e.target.value })
@@ -417,6 +396,7 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
                   <input
                     type="text"
                     className="form-input"
+                    placeholder="Mis. Creative Director"
                     value={vCard.jobTitle}
                     onChange={(e) =>
                       setVCard({ ...vCard, jobTitle: e.target.value })
@@ -428,6 +408,7 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
                   <input
                     type="text"
                     className="form-input"
+                    placeholder="Mis. Nexus Innovations"
                     value={vCard.company}
                     onChange={(e) =>
                       setVCard({ ...vCard, company: e.target.value })
@@ -439,6 +420,7 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
                   <input
                     type="text"
                     className="form-input"
+                    placeholder="mis. +1 (555) 234-5678"
                     value={vCard.phone}
                     onChange={(e) =>
                       setVCard({ ...vCard, phone: e.target.value })
@@ -450,9 +432,46 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
                   <input
                     type="email"
                     className="form-input"
+                    placeholder="mis. nama@perusahaan.com"
                     value={vCard.email}
                     onChange={(e) =>
                       setVCard({ ...vCard, email: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Website</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="https://websiteanda.com"
+                    value={vCard.website || ""}
+                    onChange={(e) =>
+                      setVCard({ ...vCard, website: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Alamat</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Kota, Negara, atau alamat lengkap"
+                    value={vCard.address || ""}
+                    onChange={(e) =>
+                      setVCard({ ...vCard, address: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                  <label className="form-label">Bio Singkat</label>
+                  <textarea
+                    className="form-input"
+                    rows={3}
+                    placeholder="Tulis deskripsi singkat tentang Anda..."
+                    value={vCard.bio || ""}
+                    onChange={(e) =>
+                      setVCard({ ...vCard, bio: e.target.value })
                     }
                   />
                 </div>
@@ -507,7 +526,97 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
                       <button type="button" className="btn btn-danger btn-sm" onClick={() => setBioLink({ ...bioLink, links: bioLink.links.filter((_, itemIndex) => itemIndex !== index) })}>Hapus</button>
                     </div>
                   ))}
-                  <button type="button" className="btn btn-secondary btn-sm" style={{ alignSelf: "start" }} onClick={() => setBioLink({ ...bioLink, links: [...bioLink.links, { id: crypto.randomUUID(), title: "", url: "" }] })}>+ Tambah tautan</button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    style={{ alignSelf: "start" }}
+                    onClick={() =>
+                      setBioLink({
+                        ...bioLink,
+                        links: [
+                          ...bioLink.links,
+                          { id: crypto.randomUUID(), title: "", url: "" },
+                        ],
+                      })
+                    }
+                  >
+                    + Tambah tautan
+                  </button>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.75rem",
+                  }}
+                >
+                  <label className="form-label">
+                    Sosial Media (opsional)
+                  </label>
+                  {(bioLink.socials || []).map((social, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1.5fr auto",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      <input
+                        className="form-input"
+                        placeholder="Platform (mis. Instagram)"
+                        value={social.platform}
+                        onChange={(e) => {
+                          const socials = [...(bioLink.socials || [])];
+                          socials[index] = {
+                            ...social,
+                            platform: e.target.value,
+                          };
+                          setBioLink({ ...bioLink, socials });
+                        }}
+                      />
+                      <input
+                        className="form-input"
+                        placeholder="https://..."
+                        value={social.url}
+                        onChange={(e) => {
+                          const socials = [...(bioLink.socials || [])];
+                          socials[index] = { ...social, url: e.target.value };
+                          setBioLink({ ...bioLink, socials });
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        onClick={() =>
+                          setBioLink({
+                            ...bioLink,
+                            socials: (bioLink.socials || []).filter(
+                              (_, itemIndex) => itemIndex !== index
+                            ),
+                          })
+                        }
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    style={{ alignSelf: "start" }}
+                    onClick={() =>
+                      setBioLink({
+                        ...bioLink,
+                        socials: [
+                          ...(bioLink.socials || []),
+                          { platform: "", url: "" },
+                        ],
+                      })
+                    }
+                  >
+                    + Tambah sosmed
+                  </button>
                 </div>
               </div>
             )}
@@ -589,12 +698,6 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
               </div>
             )}
 
-            {qrType === "text" && (
-              <div className="form-group">
-                <label className="form-label">Teks yang ditampilkan saat dipindai</label>
-                <textarea className="form-input" rows={5} placeholder="Tulis pesan di sini..." value={text} onChange={(e) => setText(e.target.value)} />
-              </div>
-            )}
           </div>
 
           {/* Step 3: Customize Frame & Design */}
@@ -707,25 +810,181 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
             </h3>
 
             <div style={{ marginBottom: "1.5rem" }}>
-              {["url", "wifi", "whatsapp", "text"].includes(qrType) ? (
+              {["url", "wifi", "whatsapp"].includes(qrType) ? (
                 <QRCodeCanvas
                   value={getComputedTargetUrl()}
                   styleConfig={styleConfig}
                   size={220}
                   showDownload={true}
                 />
-              ) : (
+              ) : qrType === "vcard" ? (
                 <div
                   style={{
-                    padding: "2rem 1rem",
+                    padding: "1.5rem 1rem",
                     border: "1px dashed #a5b4fc",
                     borderRadius: "16px",
                     color: "#64748b",
                     lineHeight: 1.6,
                   }}
                 >
-                  QR aktif dibuat saat disimpan. Setelah itu, buka Dashboard
-                  untuk memindai atau mengunduh QR kartu nama yang valid.
+                  <div
+                    style={{
+                      fontSize: "0.78rem",
+                      color: "#a5b4fc",
+                      fontWeight: 700,
+                      marginBottom: "1rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Pratinjau Halaman Publik
+                  </div>
+                  <div
+                    style={{
+                      width: "70px",
+                      height: "70px",
+                      borderRadius: "50%",
+                      margin: "0 auto 0.75rem",
+                      background: "linear-gradient(135deg, #6366f1, #06b6d4)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#fff",
+                      fontWeight: 800,
+                      fontSize: "1.2rem",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {vCard.avatarUrl ? (
+                      <img
+                        src={vCard.avatarUrl}
+                        alt="avatar"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      `${(vCard.firstName || "A")[0]}${
+                        (vCard.lastName || "M")[0] || ""
+                      }`.toUpperCase()
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      color: "#e2e8f0",
+                      fontWeight: 800,
+                      fontSize: "1.05rem",
+                    }}
+                  >
+                    {`${vCard.firstName} ${vCard.lastName}`.trim() ||
+                      "Nama Kontak"}
+                  </div>
+                  <div
+                    style={{
+                      color: "#818cf8",
+                      fontSize: "0.85rem",
+                      fontWeight: 600,
+                      marginTop: "0.15rem",
+                    }}
+                  >
+                    {vCard.jobTitle}
+                  </div>
+                  <div style={{ color: "#64748b", fontSize: "0.8rem" }}>
+                    {vCard.company}
+                  </div>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    padding: "1.5rem 1rem",
+                    border: "1px dashed #a5b4fc",
+                    borderRadius: "16px",
+                    color: "#64748b",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "0.78rem",
+                      color: "#a5b4fc",
+                      fontWeight: 700,
+                      marginBottom: "1rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Pratinjau Halaman Publik
+                  </div>
+                  <div
+                    style={{
+                      width: "70px",
+                      height: "70px",
+                      borderRadius: "50%",
+                      margin: "0 auto 0.75rem",
+                      background: "linear-gradient(135deg, #6366f1, #06b6d4)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#fff",
+                      fontWeight: 800,
+                      fontSize: "1.2rem",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {bioLink.avatarUrl ? (
+                      <img
+                        src={bioLink.avatarUrl}
+                        alt="avatar"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      (bioLink.name || "L")[0].toUpperCase()
+                    )}
+                  </div>
+                  <div style={{ color: "#e2e8f0", fontWeight: 800 }}>
+                    {bioLink.name || "Nama Profil"}
+                  </div>
+                  <div style={{ color: "#94a3b8", fontSize: "0.85rem" }}>
+                    {bioLink.bio}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.4rem",
+                      marginTop: "0.9rem",
+                    }}
+                  >
+                    {(bioLink.links || []).slice(0, 3).map((link, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          background: "rgba(99, 102, 241, 0.25)",
+                          color: "#e2e5f0",
+                          borderRadius: "10px",
+                          padding: "0.45rem 0.85rem",
+                          fontSize: "0.8rem",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {link.title || "Tanpa judul"}
+                      </div>
+                    ))}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.72rem",
+                      color: "#64748b",
+                      marginTop: "1rem",
+                    }}
+                  >
+                    QR aktif dibuat saat disimpan. Buka Dashboard untuk
+                    mengunduh QR & mengubah konten kapan saja.
+                  </div>
                 </div>
               )}
             </div>

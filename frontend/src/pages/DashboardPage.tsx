@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { getPublicQRUrl, qrService } from "../services/api";
-import type { QRCodeData, ScanAnalytics, QRStyleConfig, User } from "../types";
+import type { QRCodeData, ScanAnalytics, QRStyleConfig, User, VCardData, BioLinkData } from "../types";
 import { QRCodeCanvas } from "../components/QRCodeCanvas";
 import {
   BarChart3,
@@ -30,6 +30,19 @@ const defaultStyleConfig: QRStyleConfig = {
   logoSize: 40,
 };
 
+const emptyVCard: VCardData = {
+  firstName: "",
+  lastName: "",
+  jobTitle: "",
+  company: "",
+  phone: "",
+  email: "",
+  website: "",
+  address: "",
+  avatarUrl: "",
+  bio: "",
+};
+
 interface DashboardPageProps {
   user: User | null;
   onNavigateCreate: () => void;
@@ -47,6 +60,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [editingQR, setEditingQR] = useState<QRCodeData | null>(null);
   const [newTargetUrl, setNewTargetUrl] = useState("");
   const [newTitle, setNewTitle] = useState("");
+  const [editVCard, setEditVCard] = useState<VCardData | null>(null);
+  const [editBioLink, setEditBioLink] = useState<BioLinkData | null>(null);
 
   // Analytics Modal State
   const [analyticsQR, setAnalyticsQR] = useState<QRCodeData | null>(null);
@@ -95,24 +110,47 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     setEditingQR(qr);
     setNewTitle(qr.title);
     setNewTargetUrl(qr.target_url);
+    if (qr.type === "vcard") {
+      setEditVCard({ ...emptyVCard, ...(qr.custom_data || {}) });
+    } else {
+      setEditVCard(null);
+    }
+    if (qr.type === "biolink") {
+      setEditBioLink({
+        name: "",
+        bio: "",
+        avatarUrl: "",
+        links: [],
+        socials: [],
+        ...(qr.custom_data || {}),
+      });
+    } else {
+      setEditBioLink(null);
+    }
   };
 
   const handleSaveEdit = async () => {
     if (!editingQR) return;
     try {
-      let normalizedTarget = newTargetUrl.trim();
-      if (
-        editingQR.type === "url" &&
-        normalizedTarget &&
-        !/^https?:\/\//i.test(normalizedTarget)
-      ) {
-        normalizedTarget = "https://" + normalizedTarget;
+      const payload: Record<string, unknown> = { title: newTitle.trim() };
+
+      if (editingQR.type === "vcard") {
+        payload.custom_data = editVCard;
+      } else if (editingQR.type === "biolink") {
+        payload.custom_data = editBioLink;
+      } else {
+        let normalizedTarget = newTargetUrl.trim();
+        if (
+          editingQR.type === "url" &&
+          normalizedTarget &&
+          !/^https?:\/\//i.test(normalizedTarget)
+        ) {
+          normalizedTarget = "https://" + normalizedTarget;
+        }
+        payload.target_url = normalizedTarget;
       }
 
-      await qrService.update(editingQR.id, {
-        title: newTitle.trim(),
-        target_url: normalizedTarget,
-      });
+      await qrService.update(editingQR.id, payload);
       setEditingQR(null);
       fetchQRCodes();
     } catch (err) {
@@ -277,7 +315,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {filteredQRCodes.map((qr) => {
             const shortUrl = getPublicQRUrl(qr.short_code);
-            const qrValue = qr.type === "wifi" || qr.type === "text"
+            const qrValue = qr.type === "wifi"
               ? qr.target_url
               : shortUrl;
             return (
@@ -343,11 +381,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   </div>
 
                   <div style={{ fontSize: "0.85rem", color: "#64748b" }}>
-                    Target:{" "}
+                    {qr.type === "vcard" || qr.type === "biolink"
+                      ? "Konten:"
+                      : "Target:"}{" "}
                     <span style={{ color: "#cbd5e1" }}>
-                      {qr.target_url.length > 50
-                        ? qr.target_url.substring(0, 50) + "..."
-                        : qr.target_url}
+                      {qr.type === "vcard"
+                        ? `${
+                            (qr.custom_data && qr.custom_data.firstName) || ""
+                          } ${
+                            (qr.custom_data && qr.custom_data.lastName) || ""
+                          }`.trim() || "Kartu nama digital"
+                        : qr.type === "biolink"
+                          ? (qr.custom_data && qr.custom_data.name) ||
+                            "Bio Link"
+                          : qr.target_url.length > 50
+                            ? qr.target_url.substring(0, 50) + "..."
+                            : qr.target_url}
                     </span>
                   </div>
                 </div>
@@ -396,7 +445,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     <button
                       className="btn btn-secondary btn-sm"
                       onClick={() => handleOpenEdit(qr)}
-                      title="Edit Target URL"
+                      title="Edit QR Code Content"
                     >
                       <Edit3 size={16} /> Edit
                     </button>
@@ -433,7 +482,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div
             className="modal-content"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "500px" }}
+            style={{ maxWidth: "720px" }}
           >
             <button
               onClick={() => setEditingQR(null)}
@@ -449,7 +498,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <X size={20} />
             </button>
 
-            <h2 style={{ marginBottom: "0.5rem" }}>Edit Dynamic Target URL</h2>
+            <h2 style={{ marginBottom: "0.5rem" }}>Edit QR Code</h2>
             <p
               style={{
                 color: "#94a3b8",
@@ -457,8 +506,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 marginBottom: "1.5rem",
               }}
             >
-              Update where this QR Code redirects to without changing the QR
-              Code image!
+              Perbarui konten tanpa mengubah gambar QR Code — tautan dinamis
+              tetap aktif dan pemindaian tidak perlu diulang.
             </p>
 
             <div className="form-group">
@@ -471,15 +520,339 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">New Target URL</label>
-              <input
-                type="url"
-                className="form-input"
-                value={newTargetUrl}
-                onChange={(e) => setNewTargetUrl(e.target.value)}
-              />
-            </div>
+            {editingQR.type === "vcard" && editVCard && (
+              <div
+                className="content-grid"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "1rem",
+                }}
+              >
+                <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                  <label className="form-label">Foto Profil (URL, opsional)</label>
+                  <input
+                    type="url"
+                    className="form-input"
+                    placeholder="https://..."
+                    value={editVCard.avatarUrl || ""}
+                    onChange={(e) =>
+                      setEditVCard({ ...editVCard, avatarUrl: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Nama Depan</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editVCard.firstName}
+                    onChange={(e) =>
+                      setEditVCard({ ...editVCard, firstName: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Nama Belakang</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editVCard.lastName}
+                    onChange={(e) =>
+                      setEditVCard({ ...editVCard, lastName: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Jabatan</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editVCard.jobTitle}
+                    onChange={(e) =>
+                      setEditVCard({ ...editVCard, jobTitle: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Nama Perusahaan</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editVCard.company}
+                    onChange={(e) =>
+                      setEditVCard({ ...editVCard, company: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Nomor Telepon</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editVCard.phone}
+                    onChange={(e) =>
+                      setEditVCard({ ...editVCard, phone: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Alamat Email</label>
+                  <input
+                    type="email"
+                    className="form-input"
+                    value={editVCard.email}
+                    onChange={(e) =>
+                      setEditVCard({ ...editVCard, email: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Website</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="https://websiteanda.com"
+                    value={editVCard.website}
+                    onChange={(e) =>
+                      setEditVCard({ ...editVCard, website: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Alamat</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editVCard.address}
+                    onChange={(e) =>
+                      setEditVCard({ ...editVCard, address: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                  <label className="form-label">Bio Singkat</label>
+                  <textarea
+                    className="form-input"
+                    rows={3}
+                    value={editVCard.bio}
+                    onChange={(e) =>
+                      setEditVCard({ ...editVCard, bio: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+
+            {editingQR.type === "biolink" && editBioLink && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1rem",
+                }}
+              >
+                <div className="form-group">
+                  <label className="form-label">
+                    Foto Profil (URL, opsional)
+                  </label>
+                  <input
+                    type="url"
+                    className="form-input"
+                    placeholder="https://..."
+                    value={editBioLink.avatarUrl || ""}
+                    onChange={(e) =>
+                      setEditBioLink({ ...editBioLink, avatarUrl: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Nama Profil</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editBioLink.name}
+                    onChange={(e) =>
+                      setEditBioLink({ ...editBioLink, name: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Bio</label>
+                  <textarea
+                    className="form-input"
+                    rows={2}
+                    value={editBioLink.bio || ""}
+                    onChange={(e) =>
+                      setEditBioLink({ ...editBioLink, bio: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Daftar Tautan</label>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.75rem",
+                      marginTop: "0.5rem",
+                    }}
+                  >
+                    {editBioLink.links.map((link, index) => (
+                      <div
+                        key={link.id || index}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1.5fr auto",
+                          gap: "0.5rem",
+                        }}
+                      >
+                        <input
+                          className="form-input"
+                          placeholder="Judul (mis. Portfolio)"
+                          value={link.title}
+                          onChange={(e) => {
+                            const links = [...editBioLink.links];
+                            links[index] = { ...link, title: e.target.value };
+                            setEditBioLink({ ...editBioLink, links });
+                          }}
+                        />
+                        <input
+                          className="form-input"
+                          placeholder="https://..."
+                          value={link.url}
+                          onChange={(e) => {
+                            const links = [...editBioLink.links];
+                            links[index] = { ...link, url: e.target.value };
+                            setEditBioLink({ ...editBioLink, links });
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm"
+                          onClick={() =>
+                            setEditBioLink({
+                              ...editBioLink,
+                              links: editBioLink.links.filter(
+                                (_, itemIndex) => itemIndex !== index
+                              ),
+                            })
+                          }
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{ alignSelf: "start" }}
+                      onClick={() =>
+                        setEditBioLink({
+                          ...editBioLink,
+                          links: [
+                            ...editBioLink.links,
+                            { id: crypto.randomUUID(), title: "", url: "" },
+                          ],
+                        })
+                      }
+                    >
+                      + Tambah tautan
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="form-label">Sosial Media (opsional)</label>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.75rem",
+                      marginTop: "0.5rem",
+                    }}
+                  >
+                    {(editBioLink.socials || []).map((social, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1.5fr auto",
+                          gap: "0.5rem",
+                        }}
+                      >
+                        <input
+                          className="form-input"
+                          placeholder="Platform (mis. Instagram)"
+                          value={social.platform}
+                          onChange={(e) => {
+                            const socials = [...(editBioLink.socials || [])];
+                            socials[index] = {
+                              ...social,
+                              platform: e.target.value,
+                            };
+                            setEditBioLink({ ...editBioLink, socials });
+                          }}
+                        />
+                        <input
+                          className="form-input"
+                          placeholder="https://..."
+                          value={social.url}
+                          onChange={(e) => {
+                            const socials = [...(editBioLink.socials || [])];
+                            socials[index] = { ...social, url: e.target.value };
+                            setEditBioLink({ ...editBioLink, socials });
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm"
+                          onClick={() =>
+                            setEditBioLink({
+                              ...editBioLink,
+                              socials: (editBioLink.socials || []).filter(
+                                (_, itemIndex) => itemIndex !== index
+                              ),
+                            })
+                          }
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{ alignSelf: "start" }}
+                      onClick={() =>
+                        setEditBioLink({
+                          ...editBioLink,
+                          socials: [
+                            ...(editBioLink.socials || []),
+                            { platform: "", url: "" },
+                          ],
+                        })
+                      }
+                    >
+                      + Tambah sosmed
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {editingQR.type !== "vcard" && editingQR.type !== "biolink" && (
+              <div className="form-group">
+                <label className="form-label">New Target URL</label>
+                <input
+                  type="url"
+                  className="form-input"
+                  value={newTargetUrl}
+                  onChange={(e) => setNewTargetUrl(e.target.value)}
+                />
+              </div>
+            )}
 
             <div
               style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { qrService } from '../services/api';
 import type { QRCodeData, VCardData } from '../types';
-import { User, Phone, Mail, Globe, MapPin, Download, Wifi, MessageCircle, ExternalLink, ShieldAlert } from 'lucide-react';
+import { Phone, Mail, Globe, MapPin, Download, Wifi, MessageCircle, ExternalLink, ShieldAlert, AtSign } from 'lucide-react';
 
 interface PublicViewPageProps {
   shortCode: string;
@@ -53,23 +53,35 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
   // vCard Handler: Download VCF Contact File
   const downloadVCF = () => {
     const vCard: VCardData = custom_data || {};
-    const vcfText = `BEGIN:VCARD
-VERSION:3.0
-N:${vCard.lastName || ''};${vCard.firstName || ''};;;
-FN:${vCard.firstName || ''} ${vCard.lastName || ''}
-ORG:${vCard.company || ''}
-TITLE:${vCard.jobTitle || ''}
-TEL;TYPE=CELL:${vCard.phone || ''}
-EMAIL:${vCard.email || ''}
-URL:${vCard.website || ''}
-ADR:;;${vCard.address || ''};;;;
-END:VCARD`;
+    const firstName = (vCard.firstName || '').trim();
+    const lastName = (vCard.lastName || '').trim();
+    const website = (vCard.website || '').trim();
+    const fullName = `${firstName} ${lastName}`.trim() || 'Contact';
+
+    const lines = [
+      'BEGIN:VCARD',
+      'VERSION:3.0',
+      `N:${lastName};${firstName};;;`,
+      `FN:${fullName}`,
+      vCard.avatarUrl ? `PHOTO;VALUE=URI:${vCard.avatarUrl}` : '',
+      vCard.company ? `ORG:${vCard.company}` : '',
+      vCard.jobTitle ? `TITLE:${vCard.jobTitle}` : '',
+      vCard.phone ? `TEL;TYPE=CELL:${vCard.phone}` : '',
+      vCard.email ? `EMAIL:${vCard.email}` : '',
+      website
+        ? `URL:${/^https?:\/\//i.test(website) ? website : `https://${website}`}`
+        : '',
+      vCard.address ? `ADR:;;${vCard.address};;;;` : '',
+      vCard.bio ? `NOTE:${vCard.bio}` : '',
+      'END:VCARD'
+    ];
+    const vcfText = lines.filter(Boolean).join('\r\n');
 
     const blob = new Blob([vcfText], { type: 'text/vcard;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${vCard.firstName || 'contact'}_vcard.vcf`;
+    link.download = `${fullName.replace(/\s+/g, '_')}_vcard.vcf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -116,16 +128,21 @@ END:VCARD`;
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#fff'
+                    color: '#fff',
+                    fontWeight: 800,
+                    fontSize: '1.4rem'
                   }}
                 >
-                  <User size={40} />
+                  {`${(custom_data.firstName || '')[0] || ''}${
+                    (custom_data.lastName || '')[0] || ''
+                  }`.toUpperCase() || 'A'}
                 </div>
               )}
             </div>
 
             <h1 style={{ fontSize: '1.6rem', marginBottom: '0.2rem' }}>
-              {custom_data.firstName} {custom_data.lastName}
+              {`${custom_data.firstName || ''} ${custom_data.lastName || ''}`.trim() ||
+                'Digital Business Card'}
             </h1>
             {custom_data.jobTitle && (
               <p style={{ color: '#6366f1', fontWeight: 600, fontSize: '0.95rem' }}>{custom_data.jobTitle}</p>
@@ -226,7 +243,7 @@ END:VCARD`;
         {/* BioLink View */}
         {type === 'biolink' && (
           <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
-            {custom_data.avatarUrl && (
+            {custom_data.avatarUrl ? (
               <img
                 src={custom_data.avatarUrl}
                 alt="Avatar"
@@ -239,31 +256,86 @@ END:VCARD`;
                   border: '3px solid #6366f1'
                 }}
               />
+            ) : (
+              <div
+                style={{
+                  width: '90px',
+                  height: '90px',
+                  borderRadius: '50%',
+                  margin: '0 auto 1rem',
+                  background: 'linear-gradient(135deg, #6366f1, #06b6d4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  fontWeight: 800,
+                  fontSize: '1.8rem',
+                  border: '3px solid #6366f1'
+                }}
+              >
+                {(custom_data.name || 'L')[0].toUpperCase() || 'L'}
+              </div>
             )}
-            <h1 style={{ fontSize: '1.6rem', marginBottom: '0.3rem' }}>{custom_data.name}</h1>
+            <h1 style={{ fontSize: '1.6rem', marginBottom: '0.3rem' }}>
+              {custom_data.name || 'Bio Link'}
+            </h1>
             {custom_data.bio && <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>{custom_data.bio}</p>}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              {(custom_data.links || []).map((link: any, idx: number) => (
-                <a
-                  key={idx}
-                  href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn btn-primary"
-                  style={{
-                    width: '100%',
-                    justifyContent: 'space-between',
-                    padding: '0.9rem 1.25rem',
-                    borderRadius: '14px',
-                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(168, 85, 247, 0.9))'
-                  }}
-                >
-                  <span style={{ fontWeight: 600 }}>{link.title}</span>
-                  <ExternalLink size={16} />
-                </a>
-              ))}
+              {(custom_data.links || []).map((link: any, idx: number) => {
+                const linkUrl = (link.url || '').trim();
+                if (!linkUrl) return null;
+                return (
+                  <a
+                    key={idx}
+                    href={/^https?:\/\//i.test(linkUrl) ? linkUrl : `https://${linkUrl}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-primary"
+                    style={{
+                      width: '100%',
+                      justifyContent: 'space-between',
+                      padding: '0.9rem 1.25rem',
+                      borderRadius: '14px',
+                      background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(168, 85, 247, 0.9))'
+                    }}
+                  >
+                    <span style={{ fontWeight: 600 }}>{link.title || 'Buka Tautan'}</span>
+                    <ExternalLink size={16} />
+                  </a>
+                );
+              })}
             </div>
+
+            {custom_data.socials && custom_data.socials.length > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  gap: '0.6rem',
+                  marginTop: '1.5rem'
+                }}
+              >
+                {custom_data.socials.map((social: any, idx: number) => {
+                  const socialUrl = (social?.url || '').trim();
+                  if (!socialUrl) return null;
+                  return (
+                    <a
+                      key={idx}
+                      href={/^https?:\/\//i.test(socialUrl) ? socialUrl : `https://${socialUrl}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-secondary btn-sm"
+                      style={{ borderRadius: '999px', gap: '0.4rem' }}
+                    >
+                      <AtSign size={14} />
+                      {social.platform || 'Sosial Media'}
+                    </a>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

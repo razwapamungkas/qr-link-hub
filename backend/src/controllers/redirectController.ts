@@ -100,7 +100,7 @@ export async function handleRedirect(req: Request, res: Response): Promise<void>
       return;
     }
 
-    // For landing page types (vcard, biolink, wifi, text), redirect to Frontend Public View route
+    // For landing page types (vcard, biolink, wifi), redirect to Frontend Public View route
     const hostHeader = req.headers.host || 'localhost:5000';
     const hostname = hostHeader.split(':')[0];
     const frontendBase = process.env.FRONTEND_URL || `http://${hostname}:5173`;
