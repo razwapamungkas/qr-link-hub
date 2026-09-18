@@ -24,11 +24,35 @@ function parseUserAgent(ua: string | undefined): { device_type: string; os: stri
   return { device_type, os, browser };
 }
 
+export function safeJsonParse(data: any, fallback = {}): any {
+  if (typeof data === 'object' && data !== null) return data;
+  if (typeof data === 'string') {
+    try {
+      const parsed = JSON.parse(data);
+      if (typeof parsed === 'string') return safeJsonParse(parsed, fallback);
+      return parsed || fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+}
+
 export async function handleRedirect(req: Request, res: Response): Promise<void> {
   try {
     const { shortCode } = req.params;
-    const db = await getDb();
 
+    const hostHeader = req.headers.host || 'localhost:3001';
+    const hostname = hostHeader.split(':')[0];
+    const frontendBase = process.env.FRONTEND_URL || `http://${hostname}:5173`;
+
+    // Support live preview scanning during creation
+    if (shortCode === 'preview') {
+      res.redirect(302, `${frontendBase}/#/p/preview`);
+      return;
+    }
+
+    const db = await getDb();
     const qr = await db.get('SELECT * FROM qrcodes WHERE short_code = ?', [shortCode]);
 
     if (!qr) {
@@ -81,8 +105,8 @@ export async function handleRedirect(req: Request, res: Response): Promise<void>
       res.json({
         qrcode: {
           ...qr,
-          custom_data: JSON.parse(qr.custom_data || '{}'),
-          style_config: JSON.parse(qr.style_config || '{}')
+          custom_data: safeJsonParse(qr.custom_data),
+          style_config: safeJsonParse(qr.style_config)
         }
       });
       return;
@@ -101,10 +125,6 @@ export async function handleRedirect(req: Request, res: Response): Promise<void>
     }
 
     // For landing page types (vcard, biolink, wifi), redirect to Frontend Public View route
-    const hostHeader = req.headers.host || 'localhost:5000';
-    const hostname = hostHeader.split(':')[0];
-    const frontendBase = process.env.FRONTEND_URL || `http://${hostname}:5173`;
-
     res.redirect(302, `${frontendBase}/#/p/${shortCode}`);
   } catch (error) {
     console.error('Redirect error:', error);
@@ -115,6 +135,34 @@ export async function handleRedirect(req: Request, res: Response): Promise<void>
 export async function getPublicQRInfo(req: Request, res: Response): Promise<void> {
   try {
     const { shortCode } = req.params;
+
+    if (shortCode === 'preview') {
+      res.json({
+        qrcode: {
+          id: 'preview',
+          title: 'Pratinjau QR Code',
+          type: 'vcard',
+          short_code: 'preview',
+          target_url: 'https://qrfy.com',
+          is_active: 1,
+          custom_data: {
+            firstName: 'Alex',
+            lastName: 'Morgan',
+            jobTitle: 'Creative Director',
+            company: 'Nexus Innovations',
+            phone: '+1 (555) 234-5678',
+            email: 'alex.m@example.com',
+            website: 'https://nexus.example.com',
+            address: 'San Francisco, CA',
+            avatarUrl: '',
+            bio: 'Pratinjau Kartu Nama Digital vCard Plus.'
+          },
+          style_config: {}
+        }
+      });
+      return;
+    }
+
     const db = await getDb();
     const qr = await db.get('SELECT * FROM qrcodes WHERE short_code = ?', [shortCode]);
 
@@ -136,8 +184,8 @@ export async function getPublicQRInfo(req: Request, res: Response): Promise<void
         short_code: qr.short_code,
         target_url: qr.target_url,
         is_active: qr.is_active,
-        custom_data: JSON.parse(qr.custom_data || '{}'),
-        style_config: JSON.parse(qr.style_config || '{}')
+        custom_data: safeJsonParse(qr.custom_data),
+        style_config: safeJsonParse(qr.style_config)
       }
     });
   } catch (error) {

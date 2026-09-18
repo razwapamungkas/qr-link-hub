@@ -48,15 +48,19 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
     );
   }
 
-  const { type, custom_data } = qrData;
+  const type = qrData.type;
+  const rawCustom = qrData.custom_data;
+  const customData = typeof rawCustom === 'string'
+    ? (() => { try { return JSON.parse(rawCustom) || {}; } catch { return {}; } })()
+    : (rawCustom || {});
 
   // vCard Handler: Download VCF Contact File
   const downloadVCF = () => {
-    const vCard: VCardData = custom_data || {};
+    const vCard: VCardData = customData;
     const firstName = (vCard.firstName || '').trim();
     const lastName = (vCard.lastName || '').trim();
     const website = (vCard.website || '').trim();
-    const fullName = `${firstName} ${lastName}`.trim() || 'Contact';
+    const fullName = `${firstName} ${lastName}`.trim() || 'Kontak Digital';
 
     const lines = [
       'BEGIN:VCARD',
@@ -112,9 +116,9 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
                 boxShadow: '0 8px 25px rgba(99, 102, 241, 0.4)'
               }}
             >
-              {custom_data.avatarUrl ? (
+              {customData.avatarUrl ? (
                 <img
-                  src={custom_data.avatarUrl}
+                  src={customData.avatarUrl}
                   alt="Avatar"
                   style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
                 />
@@ -133,25 +137,25 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
                     fontSize: '1.4rem'
                   }}
                 >
-                  {`${(custom_data.firstName || '')[0] || ''}${
-                    (custom_data.lastName || '')[0] || ''
+                  {`${(customData.firstName || '')[0] || ''}${
+                    (customData.lastName || '')[0] || ''
                   }`.toUpperCase() || 'A'}
                 </div>
               )}
             </div>
 
             <h1 style={{ fontSize: '1.6rem', marginBottom: '0.2rem' }}>
-              {`${custom_data.firstName || ''} ${custom_data.lastName || ''}`.trim() ||
+              {`${customData.firstName || ''} ${customData.lastName || ''}`.trim() ||
                 'Digital Business Card'}
             </h1>
-            {custom_data.jobTitle && (
-              <p style={{ color: '#6366f1', fontWeight: 600, fontSize: '0.95rem' }}>{custom_data.jobTitle}</p>
+            {customData.jobTitle && (
+              <p style={{ color: '#6366f1', fontWeight: 600, fontSize: '0.95rem' }}>{customData.jobTitle}</p>
             )}
-            {custom_data.company && (
-              <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1.25rem' }}>{custom_data.company}</p>
+            {customData.company && (
+              <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1.25rem' }}>{customData.company}</p>
             )}
 
-            {custom_data.bio && (
+            {customData.bio && (
               <p
                 style={{
                   background: 'rgba(255,255,255,0.04)',
@@ -163,18 +167,18 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
                   lineHeight: '1.5'
                 }}
               >
-                {custom_data.bio}
+                {customData.bio}
               </p>
             )}
 
             <button className="btn btn-primary" style={{ width: '100%', marginBottom: '1.5rem' }} onClick={downloadVCF}>
-              <Download size={18} /> Save to Contacts (.vcf)
+              <Download size={18} /> Simpan ke Kontak (.vcf)
             </button>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', textAlign: 'left' }}>
-              {custom_data.phone && (
+              {customData.phone && (
                 <a
-                  href={`tel:${custom_data.phone}`}
+                  href={`tel:${customData.phone}`}
                   className="glass-card"
                   style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.85rem 1rem' }}
                 >
@@ -182,15 +186,15 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
                     <Phone size={18} />
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Phone</div>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{custom_data.phone}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Telepon</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{customData.phone}</div>
                   </div>
                 </a>
               )}
 
-              {custom_data.email && (
+              {customData.email && (
                 <a
-                  href={`mailto:${custom_data.email}`}
+                  href={`mailto:${customData.email}`}
                   className="glass-card"
                   style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.85rem 1rem' }}
                 >
@@ -199,14 +203,14 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
                   </div>
                   <div>
                     <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Email</div>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{custom_data.email}</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{customData.email}</div>
                   </div>
                 </a>
               )}
 
-              {custom_data.website && (
+              {customData.website && (
                 <a
-                  href={custom_data.website.startsWith('http') ? custom_data.website : `https://${custom_data.website}`}
+                  href={customData.website.startsWith('http') ? customData.website : `https://${customData.website}`}
                   target="_blank"
                   rel="noreferrer"
                   className="glass-card"
@@ -217,12 +221,12 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
                   </div>
                   <div>
                     <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Website</div>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{custom_data.website}</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{customData.website}</div>
                   </div>
                 </a>
               )}
 
-              {custom_data.address && (
+              {customData.address && (
                 <div
                   className="glass-card"
                   style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.85rem 1rem' }}
@@ -231,8 +235,8 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
                     <MapPin size={18} />
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Address</div>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{custom_data.address}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Alamat</div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{customData.address}</div>
                   </div>
                 </div>
               )}
@@ -243,9 +247,9 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
         {/* BioLink View */}
         {type === 'biolink' && (
           <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
-            {custom_data.avatarUrl ? (
+            {customData.avatarUrl ? (
               <img
-                src={custom_data.avatarUrl}
+                src={customData.avatarUrl}
                 alt="Avatar"
                 style={{
                   width: '90px',
@@ -273,16 +277,16 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
                   border: '3px solid #6366f1'
                 }}
               >
-                {(custom_data.name || 'L')[0].toUpperCase() || 'L'}
+                {(customData.name || 'L')[0].toUpperCase() || 'L'}
               </div>
             )}
             <h1 style={{ fontSize: '1.6rem', marginBottom: '0.3rem' }}>
-              {custom_data.name || 'Bio Link'}
+              {customData.name || 'Bio Link'}
             </h1>
-            {custom_data.bio && <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>{custom_data.bio}</p>}
+            {customData.bio && <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>{customData.bio}</p>}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              {(custom_data.links || []).map((link: any, idx: number) => {
+              {(Array.isArray(customData.links) ? customData.links : []).map((link: any, idx: number) => {
                 const linkUrl = (link.url || '').trim();
                 if (!linkUrl) return null;
                 return (
@@ -307,7 +311,7 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
               })}
             </div>
 
-            {custom_data.socials && custom_data.socials.length > 0 && (
+            {Array.isArray(customData.socials) && customData.socials.length > 0 && (
               <div
                 style={{
                   display: 'flex',
@@ -317,7 +321,7 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
                   marginTop: '1.5rem'
                 }}
               >
-                {custom_data.socials.map((social: any, idx: number) => {
+                {customData.socials.map((social: any, idx: number) => {
                   const socialUrl = (social?.url || '').trim();
                   if (!socialUrl) return null;
                   return (
@@ -366,7 +370,7 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
             <div className="glass-card" style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
               <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Network Name (SSID)</div>
               <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', marginBottom: '1rem' }}>
-                {custom_data.ssid}
+                {customData.ssid}
               </div>
 
               <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Password</div>
@@ -382,16 +386,16 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
                   marginTop: '0.25rem'
                 }}
               >
-                {custom_data.password || 'No Password'}
+                {customData.password || 'No Password'}
               </div>
             </div>
 
-            {custom_data.password && (
+            {customData.password && (
               <button
                 className="btn btn-primary"
                 style={{ width: '100%' }}
                 onClick={() => {
-                  navigator.clipboard.writeText(custom_data.password);
+                  navigator.clipboard.writeText(customData.password);
                   alert('Password copied to clipboard!');
                 }}
               >
@@ -426,7 +430,7 @@ export const PublicViewPage: React.FC<PublicViewPageProps> = ({ shortCode }) => 
             </p>
 
             <a
-              href={`https://wa.me/${custom_data.phone}?text=${encodeURIComponent(custom_data.message || '')}`}
+              href={`https://wa.me/${customData.phone}?text=${encodeURIComponent(customData.message || '')}`}
               target="_blank"
               rel="noreferrer"
               className="btn btn-primary"

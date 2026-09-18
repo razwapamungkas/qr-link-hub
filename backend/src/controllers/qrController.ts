@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { getDb } from '../db.js';
 import { AuthRequest } from '../middleware/auth.js';
+import { safeJsonParse } from './redirectController.js';
 
 function generateShortCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -52,8 +53,8 @@ export async function createQRCode(req: AuthRequest, res: Response): Promise<voi
       message: 'QR code created successfully',
       qrcode: {
         ...createdQR,
-        custom_data: JSON.parse(createdQR.custom_data || '{}'),
-        style_config: JSON.parse(createdQR.style_config || '{}')
+        custom_data: safeJsonParse(createdQR.custom_data),
+        style_config: safeJsonParse(createdQR.style_config)
       }
     });
   } catch (error) {
@@ -75,8 +76,8 @@ export async function getUserQRCodes(req: AuthRequest, res: Response): Promise<v
 
     const formatted = qrcodes.map((qr) => ({
       ...qr,
-      custom_data: JSON.parse(qr.custom_data || '{}'),
-      style_config: JSON.parse(qr.style_config || '{}')
+      custom_data: safeJsonParse(qr.custom_data),
+      style_config: safeJsonParse(qr.style_config)
     }));
 
     res.json({ qrcodes: formatted });
@@ -102,8 +103,8 @@ export async function getQRCodeById(req: AuthRequest, res: Response): Promise<vo
     res.json({
       qrcode: {
         ...qr,
-        custom_data: JSON.parse(qr.custom_data || '{}'),
-        style_config: JSON.parse(qr.style_config || '{}')
+        custom_data: safeJsonParse(qr.custom_data),
+        style_config: safeJsonParse(qr.style_config)
       }
     });
   } catch (error) {
@@ -151,8 +152,8 @@ export async function updateQRCode(req: AuthRequest, res: Response): Promise<voi
       message: 'QR code updated successfully',
       qrcode: {
         ...updated,
-        custom_data: JSON.parse(updated.custom_data || '{}'),
-        style_config: JSON.parse(updated.style_config || '{}')
+        custom_data: safeJsonParse(updated.custom_data),
+        style_config: safeJsonParse(updated.style_config)
       }
     });
   } catch (error) {
