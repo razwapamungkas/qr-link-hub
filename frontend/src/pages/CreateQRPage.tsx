@@ -814,28 +814,12 @@ export const CreateQRPage: React.FC<CreateQRPageProps> = ({
                 value={
                   ["url", "wifi", "whatsapp"].includes(qrType)
                     ? getComputedTargetUrl()
-                    : getPublicQRUrl("preview")
+                    : getPublicQRUrl("preview", qrType)
                 }
                 styleConfig={styleConfig}
                 size={220}
                 showDownload={true}
               />
-              {["vcard", "biolink"].includes(qrType) && (
-                <div
-                  style={{
-                    fontSize: "0.8rem",
-                    color: "#94a3b8",
-                    marginTop: "0.8rem",
-                    lineHeight: 1.5,
-                    backgroundColor: "rgba(255,255,255,0.03)",
-                    padding: "0.75rem",
-                    borderRadius: "10px",
-                    textAlign: "left"
-                  }}
-                >
-                  💡 <b>Pratinjau Langsung</b>: QR pratinjau ini dapat langsung Anda scan via kamera HP untuk menguji halaman {qrType === "vcard" ? "vCard Plus" : "Bio Link"}. Tautan unik final akan diterbitkan saat disimpan.
-                </div>
-              )}
             </div>
 
             <button

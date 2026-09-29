@@ -28,21 +28,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setError(null);
     setLoading(true);
 
+    const cleanEmail = email.trim();
+    const cleanPassword = password;
+    const cleanName = name.trim();
+
     try {
       if (isLogin) {
-        const res = await authService.login({ email, password });
+        const res = await authService.login({ email: cleanEmail, password: cleanPassword });
         onSuccess(res.data.user, res.data.token);
         onClose();
       } else {
-        const res = await authService.register({ name, email, password });
+        const res = await authService.register({ name: cleanName, email: cleanEmail, password: cleanPassword });
         onSuccess(res.data.user, res.data.token);
         onClose();
       }
     } catch (err: any) {
-      setError(
-        err.response?.data?.error ||
-          "Authentication failed. Please check your details.",
-      );
+      if (!err.response) {
+        setError("Gagal terhubung ke server backend. Pastikan server backend sedang berjalan (http://localhost:3001).");
+      } else {
+        setError(
+          err.response?.data?.error ||
+            "Autentikasi gagal. Silakan periksa detail Anda.",
+        );
+      }
     } finally {
       setLoading(false);
     }

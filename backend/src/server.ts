@@ -1,6 +1,8 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { register, login, me } from './controllers/authController.js';
 import {
   createQRCode,
@@ -14,10 +16,22 @@ import { handleRedirect, getPublicQRInfo } from './controllers/redirectControlle
 import { authenticateToken } from './middleware/auth.js';
 import { getDb } from './db.js';
 
-dotenv.config();
+import os from 'os';
+
+export function getLocalIpAddress(): string {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const net of interfaces[name] || []) {
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return 'localhost';
+}
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors({
   origin: '*',
@@ -29,7 +43,12 @@ app.use(express.json({ limit: '10mb' }));
 
 // Health Check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'QRFY Link Hub Backend', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    service: 'QRFY Link Hub Backend',
+    localIp: getLocalIpAddress(),
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Auth Routes

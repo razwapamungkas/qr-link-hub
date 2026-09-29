@@ -44,11 +44,13 @@ export async function handleRedirect(req: Request, res: Response): Promise<void>
 
     const hostHeader = req.headers.host || 'localhost:3001';
     const hostname = hostHeader.split(':')[0];
-    const frontendBase = process.env.FRONTEND_URL || `http://${hostname}:5173`;
+    const frontendPort = process.env.FRONTEND_PORT || '5173';
+    const frontendBase = process.env.FRONTEND_URL || `http://${hostname}:${frontendPort}`;
 
     // Support live preview scanning during creation
     if (shortCode === 'preview') {
-      res.redirect(302, `${frontendBase}/#/p/preview`);
+      const typeQuery = (req.query.type as string) || 'vcard';
+      res.redirect(302, `${frontendBase}/#/p/preview?type=${typeQuery}`);
       return;
     }
 
@@ -135,17 +137,30 @@ export async function handleRedirect(req: Request, res: Response): Promise<void>
 export async function getPublicQRInfo(req: Request, res: Response): Promise<void> {
   try {
     const { shortCode } = req.params;
+    const typeQuery = (req.query.type as string) || '';
 
     if (shortCode === 'preview') {
+      const isBio = typeQuery === 'biolink';
       res.json({
         qrcode: {
           id: 'preview',
-          title: 'Pratinjau QR Code',
-          type: 'vcard',
+          title: isBio ? 'Pratinjau Bio Link' : 'Pratinjau vCard Plus',
+          type: isBio ? 'biolink' : 'vcard',
           short_code: 'preview',
           target_url: 'https://qrfy.com',
           is_active: 1,
-          custom_data: {
+          custom_data: isBio ? {
+            name: 'Sarah Connor',
+            bio: 'Digital Creator & Product Strategist',
+            avatarUrl: '',
+            links: [
+              { id: '1', title: 'Website Portfolio', url: 'https://sarah.example.com' },
+              { id: '2', title: 'Kanal YouTube', url: 'https://youtube.com' }
+            ],
+            socials: [
+              { platform: 'Instagram', url: 'https://instagram.com' }
+            ]
+          } : {
             firstName: 'Alex',
             lastName: 'Morgan',
             jobTitle: 'Creative Director',

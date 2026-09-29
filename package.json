@@ -1,0 +1,11 @@
+{
+  "name": "qr-link-hub-root",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev": "npx tsx scripts/start-all.js",
+    "start": "npx tsx scripts/start-all.js"
+  }
+}

@@ -1,16 +1,63 @@
 import axios from 'axios';
+import { useState, useEffect } from 'react';
 
-// The backend development server uses port 3001. When the app is opened
-// through a LAN address, use that same address so a phone can scan QR codes.
+// The backend development server uses port 3001.
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
   `${window.location.protocol}//${window.location.hostname}:3001/api`;
 
-export const getPublicQRUrl = (shortCode: string) => {
-  const configuredBase = import.meta.env.VITE_QR_BASE_URL?.replace(/\/$/, '');
-  if (configuredBase) return `${configuredBase}/r/${shortCode}`;
+let serverLocalIp: string | null = null;
+const listeners = new Set<() => void>();
 
-  const apiUrl = new URL(API_BASE_URL);
-  return `${apiUrl.protocol}//${apiUrl.host}/r/${shortCode}`;
+export const fetchServerHealth = async () => {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/health`);
+    if (res.data?.localIp && res.data.localIp !== 'localhost') {
+      serverLocalIp = res.data.localIp;
+      listeners.forEach((fn) => fn());
+    }
+  } catch (e) {
+    console.error('Health check error:', e);
+  }
+};
+
+fetchServerHealth();
+
+export const subscribeServerIp = (callback: () => void) => {
+  listeners.add(callback);
+  return () => {
+    listeners.delete(callback);
+  };
+};
+
+export const getServerLocalIp = () => serverLocalIp;
+
+export function useServerIp() {
+  const [ip, setIp] = useState<string | null>(serverLocalIp);
+
+  useEffect(() => {
+    fetchServerHealth();
+    return subscribeServerIp(() => {
+      setIp(serverLocalIp);
+    });
+  }, []);
+
+  return ip;
+}
+
+export const getPublicQRUrl = (shortCode: string, type?: string, customHost?: string) => {
+  const configuredBase = import.meta.env.VITE_QR_BASE_URL?.replace(/\/$/, '');
+  const query = type ? `?type=${type}` : '';
+
+  if (configuredBase) {
+    return `${configuredBase}/r/${shortCode}${query}`;
+  }
+
+  let host = customHost || window.location.hostname;
+  if ((host === 'localhost' || host === '127.0.0.1') && serverLocalIp) {
+    host = serverLocalIp;
+  }
+
+  return `${window.location.protocol}//${host}:3001/r/${shortCode}${query}`;
 };
 
 export const api = axios.create({
